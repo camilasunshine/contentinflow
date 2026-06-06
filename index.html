@@ -1,0 +1,655 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2868
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\froman\fcharset0 Times-Roman;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\fs24 \cf0 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 <!DOCTYPE html>\
+<html lang="en">\
+<head>\
+  <meta charset="UTF-8">\
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">\
+  <title>Content In Flow</title>\
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css">\
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>\
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>\
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.3/babel.min.js"></script>\
+  <style>\
+    *, *::before, *::after \{ margin: 0; padding: 0; box-sizing: border-box; \}\
+    html, body, #root \{ height: 100%; background: #0B080A; \}\
+    select, option \{ background: #3E2A35 !important; color: #F7F4F1 !important; \}\
+    ::-webkit-scrollbar \{ width: 6px; height: 6px; \}\
+    ::-webkit-scrollbar-track \{ background: #181014; \}\
+    ::-webkit-scrollbar-thumb \{ background: #4A3040; border-radius: 3px; \}\
+    ::-webkit-scrollbar-thumb:hover \{ background: #D4705A; \}\
+  </style>\
+</head>\
+<body>\
+  <div id="root"></div>\
+  <script type="text/babel">\
+    const \{ useState, useRef \} = React;\
+\
+    const WH = \{\
+      generate: "https://n8n.srv1656205.hstgr.cloud/webhook-test/a2bda397-8d59-4acf-8c37-c3ba6f977f3d",\
+      brand:    "https://n8n.srv1656205.hstgr.cloud/webhook-test/brand-setup",\
+      ideas:    "https://n8n.srv1656205.hstgr.cloud/webhook-test/save-idea",\
+      repurpose:"https://n8n.srv1656205.hstgr.cloud/webhook-test/repurpose",\
+      save:     "https://n8n.srv1656205.hstgr.cloud/webhook-test/save-content",\
+    \};\
+\
+    const LIMITS = \{ daily: 15, monthly: 50 \};\
+\
+    const P = \{\
+      bg0:"#0B080A", bg1:"#181014", bg2:"#221620", bg3:"#3E2A35",\
+      t1:"#F7F4F1", t2:"#C9A38E", t3:"#7A5F68",\
+      coral:"#D4705A", border:"#4A3040", cyan:"#7FCFD5",\
+    \};\
+\
+    const s = \{\
+      card:\{ background:P.bg2, border:`1px solid $\{P.border\}`, borderRadius:12, padding:24 \},\
+      input:\{\
+        width:"100%", padding:"10px 14px", background:P.bg3,\
+        border:`1px solid $\{P.border\}`, borderRadius:8,\
+        color:P.t1, fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"inherit",\
+      \},\
+      label:\{ display:"block", fontSize:10, color:P.t2, letterSpacing:2, textTransform:"uppercase", marginBottom:6 \},\
+      btn:\{ padding:"10px 22px", background:P.coral, border:"none", borderRadius:8, color:"#fff", fontSize:13, cursor:"pointer", fontWeight:500 \},\
+      ghost:\{ padding:"8px 16px", background:"transparent", border:`1px solid $\{P.border\}`, borderRadius:8, color:P.t2, fontSize:12, cursor:"pointer" \},\
+      pageTitle:\{ fontSize:22, fontWeight:300, color:P.t1, fontFamily:"Georgia,serif", margin:0 \},\
+      pageSub:\{ fontSize:12, color:P.t3, marginTop:4, marginBottom:28 \},\
+    \};\
+\
+    async function callWebhook(url, body) \{\
+      const r = await fetch(url, \{ method:"POST", headers:\{"Content-Type":"application/json"\}, body:JSON.stringify(body) \});\
+      if (!r.ok) throw new Error(r.status);\
+      return r.json().catch(()=>(\{\}));\
+    \}\
+\
+    function Field(\{ label, value, onChange, placeholder, multi, rows=3, type="text" \}) \{\
+      return (\
+        <div style=\{\{marginBottom:18\}\}>\
+          \{label && <label style=\{s.label\}>\{label\}</label>\}\
+          \{multi\
+            ? <textarea value=\{value\} onChange=\{e=>onChange(e.target.value)\} placeholder=\{placeholder\} rows=\{rows\} style=\{\{...s.input,resize:"vertical",lineHeight:1.7\}\}/>\
+            : <input value=\{value\} onChange=\{e=>onChange(e.target.value)\} placeholder=\{placeholder\} type=\{type\} style=\{s.input\}/>\}\
+        </div>\
+      );\
+    \}\
+\
+    function Pill(\{ children, color=P.border \}) \{\
+      return <span style=\{\{fontSize:10,padding:"2px 8px",borderRadius:20,border:`1px solid $\{color\}`,color:P.t2,letterSpacing:1,whiteSpace:"nowrap"\}\}>\{children\}</span>;\
+    \}\
+\
+    function Bar(\{ used, max, color=P.cyan \}) \{\
+      return (\
+        <div style=\{\{background:P.bg3,borderRadius:4,height:5\}\}>\
+          <div style=\{\{background:color,width:`$\{Math.min((used/max)*100,100)\}%`,height:"100%",borderRadius:4,transition:"width .3s"\}\}/>\
+        </div>\
+      );\
+    \}\
+\
+    function Toast(\{ t \}) \{\
+      if (!t) return null;\
+      return (\
+        <div style=\{\{position:"fixed",bottom:24,right:24,padding:"12px 20px",background:P.bg3,\
+          border:`1px solid $\{t.err?P.coral:P.cyan\}`,borderRadius:8,color:P.t1,fontSize:13,zIndex:999,\
+          boxShadow:"0 4px 24px rgba(0,0,0,.6)"\}\}>\
+          \{t.msg\}\
+        </div>\
+      );\
+    \}\
+\
+    // \uc0\u9472 \u9472  DASHBOARD \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \
+    function Dashboard(\{ ideas, library, usage, go \}) \{\
+      const posted = library.filter(c=>c.posted).length;\
+      const drafts  = library.filter(c=>!c.posted).length;\
+      const stats = [\
+        \{ label:"Ideas",     val:ideas.length, icon:"ti-bulb",             page:"ideas" \},\
+        \{ label:"Drafts",    val:drafts,       icon:"ti-edit",             page:"library" \},\
+        \{ label:"Published", val:posted,       icon:"ti-check",            page:"library" \},\
+        \{ label:"Today",     val:`$\{usage.daily\}/$\{LIMITS.daily\}`, icon:"ti-bolt", page:"generate" \},\
+      ];\
+      return (\
+        <div>\
+          <h1 style=\{s.pageTitle\}>Content In Flow</h1>\
+          <p style=\{s.pageSub\}>Your creative studio for healing content</p>\
+          <div style=\{\{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:28\}\}>\
+            \{stats.map(st=>(\
+              <button key=\{st.label\} onClick=\{()=>go(st.page)\}\
+                style=\{\{...s.card,textAlign:"left",cursor:"pointer",transition:"border-color .2s"\}\}\
+                onMouseEnter=\{e=>e.currentTarget.style.borderColor=P.coral\}\
+                onMouseLeave=\{e=>e.currentTarget.style.borderColor=P.border\}>\
+                <i className=\{`ti $\{st.icon\}`\} style=\{\{fontSize:18,color:P.coral\}\} aria-hidden="true"/>\
+                <div style=\{\{fontSize:26,fontWeight:300,fontFamily:"Georgia,serif",color:P.t1,margin:"6px 0 2px"\}\}>\{st.val\}</div>\
+                <div style=\{\{fontSize:10,color:P.t2,letterSpacing:2,textTransform:"uppercase"\}\}>\{st.label\}</div>\
+              </button>\
+            ))\}\
+          </div>\
+          <div style=\{\{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20\}\}>\
+            <div style=\{s.card\}>\
+              <div style=\{\{fontSize:10,color:P.coral,letterSpacing:2,textTransform:"uppercase",marginBottom:14\}\}>Quick actions</div>\
+              \{[["+ New idea","ideas"],["Generate content","generate"],["Repurpose","repurpose"],["Brand setup","brand"]].map(([l,p])=>(\
+                <button key=\{l\} onClick=\{()=>go(p)\} style=\{\{...s.ghost,display:"block",width:"100%",textAlign:"left",marginBottom:8\}\}>\{l\}</button>\
+              ))\}\
+            </div>\
+            <div style=\{s.card\}>\
+              <div style=\{\{fontSize:10,color:P.coral,letterSpacing:2,textTransform:"uppercase",marginBottom:14\}\}>Usage</div>\
+              \{[["Daily",usage.daily,LIMITS.daily],["Monthly",usage.monthly,LIMITS.monthly]].map(([l,u,m])=>(\
+                <div key=\{l\} style=\{\{marginBottom:14\}\}>\
+                  <div style=\{\{display:"flex",justifyContent:"space-between",fontSize:12,color:P.t2,marginBottom:5\}\}>\
+                    <span>\{l\}</span><span style=\{\{color:u>=m?P.coral:P.t2\}\}>\{u\} / \{m\}</span>\
+                  </div>\
+                  <Bar used=\{u\} max=\{m\} color=\{u>=m?P.coral:P.cyan\}/>\
+                </div>\
+              ))\}\
+            </div>\
+          </div>\
+          \{ideas.length>0 && (\
+            <div style=\{s.card\}>\
+              <div style=\{\{fontSize:10,color:P.coral,letterSpacing:2,textTransform:"uppercase",marginBottom:14\}\}>Recent ideas</div>\
+              \{ideas.slice(0,4).map(i=>(\
+                <div key=\{i.id\} style=\{\{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:`1px solid $\{P.border\}`\}\}>\
+                  <span style=\{\{color:P.t1,fontSize:13\}\}>\{i.desc\}</span>\
+                  <div style=\{\{display:"flex",gap:6\}\}>\
+                    \{i.category&&<Pill>\{i.category\}</Pill>\}\
+                    \{i.type&&<Pill color=\{P.coral\}>\{i.type\}</Pill>\}\
+                  </div>\
+                </div>\
+              ))\}\
+            </div>\
+          )\}\
+        </div>\
+      );\
+    \}\
+\
+    // \uc0\u9472 \u9472  BRAND SETUP \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \
+    function BrandSetup(\{ brand, setBrand, toast \}) \{\
+      const [saving, setSaving] = useState(false);\
+      const u=(k)=>(v)=>setBrand(b=>(\{...b,[k]:v\}));\
+      const v=(k)=>brand[k]||"";\
+      const fields = [\
+        ["Business_Name","Business name",false],["Project_Name","Project name",false],\
+        ["Audience","Ideal client",true],["Transformation","Transformation you offer",true],\
+        ["Main_Offer","Main offer",false],["Brand_Voice","Brand voice",true],\
+        ["Words_To_Use","Words to use",false],["Words_To_Avoid","Words to avoid",false],\
+        ["Main_CTA","Main call to action",false],\
+        ["Brand_Pillar_1","Brand pillar 1",false],["Brand_Pillar_2","Brand pillar 2",false],\
+        ["Brand_Pillar_3","Brand pillar 3",false],["Brand_Pillar_4","Brand pillar 4",false],\
+        ["Preferred_Platforms","Preferred platforms",false],["Preferred_Content_Types","Preferred content types",false],\
+        ["Brand_Colors","Brand colors",false],["Brand_Style","Brand style",false],\
+        ["Visual_Style","Visual style",true],["Tone_Of_Voice","Tone of voice",true],\
+        ["Messaging_Notes","Messaging notes",true],["Notes","Additional notes",true],\
+      ];\
+      const save = async()=>\{\
+        setSaving(true);\
+        try \{ await callWebhook(WH.brand, brand); toast("Brand profile saved"); \}\
+        catch \{ toast("Saved locally \'97 n8n not reached","err"); \}\
+        setSaving(false);\
+      \};\
+      return (\
+        <div>\
+          <div style=\{\{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:28\}\}>\
+            <div><h1 style=\{s.pageTitle\}>Brand Setup</h1><p style=\{s.pageSub\}>Define your brand \'97 this powers all AI generation</p></div>\
+            <button onClick=\{save\} disabled=\{saving\} style=\{s.btn\}>\{saving?"Saving...":"Save brand profile"\}</button>\
+          </div>\
+          <div style=\{\{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16\}\}>\
+            \{fields.map(([k,l,m])=>(\
+              <div key=\{k\} style=\{m?\{gridColumn:"1/-1"\}:\{\}\}>\
+                <Field label=\{l\} value=\{v(k)\} onChange=\{u(k)\} multi=\{m\} rows=\{3\}/>\
+              </div>\
+            ))\}\
+          </div>\
+        </div>\
+      );\
+    \}\
+\
+    // \uc0\u9472 \u9472  IDEAS \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \
+    function Ideas(\{ ideas, setIdeas, go, setGenForm, toast \}) \{\
+      const [showForm, setShowForm] = useState(false);\
+      const [search, setSearch] = useState("");\
+      const [form, setForm] = useState(\{ desc:"", category:"", type:"", pillar:"", source:"" \});\
+      const uf = k=>v=>setForm(f=>(\{...f,[k]:v\}));\
+      const cats    = ["Education","Awareness","Transformation","Behind the Scenes","Client Story","Personal","Promotional"];\
+      const types   = ["Instagram Post","Carousel","Reel Script","Story Sequence","LinkedIn Post","Newsletter","Email"];\
+      const pillars = ["Healing","Body","Mind","Soul","Business","Transformation"];\
+      const filtered = ideas.filter(i=>i.desc.toLowerCase().includes(search.toLowerCase())||(i.category||"").toLowerCase().includes(search.toLowerCase()));\
+      const add = ()=>\{\
+        if (!form.desc) return toast("Add a description first","err");\
+        setIdeas(p=>[...p,\{...form,id:Date.now(),date:new Date().toISOString().split("T")[0]\}]);\
+        setForm(\{desc:"",category:"",type:"",pillar:"",source:""\});\
+        setShowForm(false); toast("Idea saved");\
+      \};\
+      const useGen = idea=>\{ setGenForm(f=>(\{...f,hook:idea.desc,theme1:idea.pillar||"",theme2:idea.category||""\})); go("generate"); \};\
+      return (\
+        <div>\
+          <div style=\{\{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:28\}\}>\
+            <div><h1 style=\{s.pageTitle\}>Ideas</h1><p style=\{s.pageSub\}>Capture every spark</p></div>\
+            <div style=\{\{display:"flex",gap:10\}\}>\
+              <input value=\{search\} onChange=\{e=>setSearch(e.target.value)\} placeholder="Search..." style=\{\{...s.input,width:180\}\}/>\
+              <button onClick=\{()=>setShowForm(v=>!v)\} style=\{s.btn\}>+ New idea</button>\
+            </div>\
+          </div>\
+          \{showForm && (\
+            <div style=\{\{...s.card,marginBottom:20,borderColor:P.coral\}\}>\
+              <div style=\{\{fontSize:10,color:P.coral,letterSpacing:2,textTransform:"uppercase",marginBottom:16\}\}>New idea</div>\
+              <div style=\{\{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16\}\}>\
+                <div style=\{\{gridColumn:"1/-1"\}\}><Field label="Idea description" value=\{form.desc\} onChange=\{uf("desc")\} multi rows=\{2\}/></div>\
+                <div><label style=\{s.label\}>Category</label><select value=\{form.category\} onChange=\{e=>uf("category")(e.target.value)\} style=\{s.input\}><option value="">Select...</option>\{cats.map(c=><option key=\{c\}>\{c\}</option>)\}</select></div>\
+                <div><label style=\{s.label\}>Content type</label><select value=\{form.type\} onChange=\{e=>uf("type")(e.target.value)\} style=\{s.input\}><option value="">Select...</option>\{types.map(t=><option key=\{t\}>\{t\}</option>)\}</select></div>\
+                <div><label style=\{s.label\}>Content pillar</label><select value=\{form.pillar\} onChange=\{e=>uf("pillar")(e.target.value)\} style=\{s.input\}><option value="">Select...</option>\{pillars.map(p=><option key=\{p\}>\{p\}</option>)\}</select></div>\
+                <div><Field label="Source of idea" value=\{form.source\} onChange=\{uf("source")\} placeholder="Session, client question, insight..."/></div>\
+              </div>\
+              <div style=\{\{display:"flex",gap:10,marginTop:4\}\}>\
+                <button onClick=\{add\} style=\{s.btn\}>Save idea</button>\
+                <button onClick=\{()=>setShowForm(false)\} style=\{s.ghost\}>Cancel</button>\
+              </div>\
+            </div>\
+          )\}\
+          <div style=\{\{display:"flex",flexDirection:"column",gap:8\}\}>\
+            \{filtered.length===0 && <div style=\{\{...s.card,textAlign:"center",color:P.t3,padding:48\}\}>\{ideas.length===0?"No ideas yet. Add your first one.":"No results found."\}</div>\}\
+            \{filtered.map(i=>(\
+              <div key=\{i.id\} style=\{\{...s.card,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 20px",transition:"border-color .2s"\}\}\
+                onMouseEnter=\{e=>e.currentTarget.style.borderColor=P.coral\}\
+                onMouseLeave=\{e=>e.currentTarget.style.borderColor=P.border\}>\
+                <div style=\{\{flex:1\}\}>\
+                  <div style=\{\{color:P.t1,fontSize:13,marginBottom:6\}\}>\{i.desc\}</div>\
+                  <div style=\{\{display:"flex",gap:6,flexWrap:"wrap"\}\}>\
+                    \{i.category&&<Pill>\{i.category\}</Pill>\}\
+                    \{i.type&&<Pill color=\{P.coral\}>\{i.type\}</Pill>\}\
+                    \{i.pillar&&<Pill color=\{P.cyan\}>\{i.pillar\}</Pill>\}\
+                    <span style=\{\{fontSize:10,color:P.t3\}\}>\{i.date\}</span>\
+                  </div>\
+                </div>\
+                <div style=\{\{display:"flex",gap:8,marginLeft:16\}\}>\
+                  <button onClick=\{()=>useGen(i)\} style=\{\{...s.ghost,fontSize:11,borderColor:P.coral,color:P.coral\}\}>Use for generation</button>\
+                  <button onClick=\{()=>setIdeas(p=>p.filter(x=>x.id!==i.id))\} style=\{\{...s.ghost,fontSize:11\}\}>Delete</button>\
+                </div>\
+              </div>\
+            ))\}\
+          </div>\
+        </div>\
+      );\
+    \}\
+\
+    // \uc0\u9472 \u9472  GENERATE \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \
+    function Generate(\{ genForm, setGenForm, usage, setUsage, library, setLibrary, toast \}) \{\
+      const [loading, setLoading] = useState(false);\
+      const [result, setResult] = useState(null);\
+      const [edited, setEdited] = useState("");\
+      const [dragging, setDragging] = useState(false);\
+      const fileRef = useRef();\
+      const uf = k=>v=>setGenForm(f=>(\{...f,[k]:v\}));\
+      const limitReached = usage.daily>=LIMITS.daily || usage.monthly>=LIMITS.monthly;\
+\
+      const handleFile = file=>\{\
+        if (!file) return;\
+        if (file.size > 10*1024*1024) return toast("File too large. Max 10 MB.","err");\
+        const reader = new FileReader();\
+        reader.onload = e=>setGenForm(f=>(\{...f,file:e.target.result,fileName:file.name\}));\
+        reader.readAsDataURL(file);\
+      \};\
+\
+      const generate = async()=>\{\
+        if (limitReached) return;\
+        if (!genForm.hook && !genForm.theme1) return toast("Add at least a Hook or Theme 1","err");\
+        setLoading(true); setResult(null);\
+        try \{\
+          const data = await callWebhook(WH.generate, \{\
+            action:"generate_content",\
+            hook:genForm.hook, theme1:genForm.theme1,\
+            theme2:genForm.theme2, extra_theme:genForm.extra,\
+            image:genForm.file||null, image_name:genForm.fileName||null,\
+            timestamp:new Date().toISOString(),\
+          \});\
+          const text = data.content||data.text||data.output||data.message||JSON.stringify(data);\
+          setResult(text); setEdited(text);\
+          setUsage(u=>(\{daily:u.daily+1,monthly:u.monthly+1\}));\
+          toast("Content generated");\
+        \} catch \{\
+          const demo = `[n8n not reachable \'97 activate the webhook in n8n test mode]\\n\\nHook: $\{genForm.hook||"\'97"\}\\nTheme 1: $\{genForm.theme1||"\'97"\}\\nTheme 2: $\{genForm.theme2||"\'97"\}\\nExtra: $\{genForm.extra||"\'97"\}\\n\\nYour content will appear here once n8n responds.`;\
+          setResult(demo); setEdited(demo);\
+          toast("n8n not reachable \'97 showing demo output","err");\
+        \}\
+        setLoading(false);\
+      \};\
+\
+      const approve = ()=>\{\
+        setLibrary(l=>[\{id:Date.now(),content:edited,hook:genForm.hook,theme1:genForm.theme1,theme2:genForm.theme2,file:genForm.fileName||null,posted:false,date:new Date().toISOString().split("T")[0]\},...l]);\
+        toast("Saved to library");\
+        setResult(null); setEdited("");\
+        setGenForm(\{hook:"",theme1:"",theme2:"",extra:"",file:null,fileName:""\});\
+      \};\
+\
+      return (\
+        <div>\
+          <h1 style=\{s.pageTitle\}>Generate Content</h1>\
+          <p style=\{s.pageSub\}>Brief your n8n workflow \'97 let AI do the rest</p>\
+          \{limitReached ? (\
+            <div style=\{\{...s.card,textAlign:"center",padding:60,color:P.coral\}\}>\
+              <i className="ti ti-alert-circle" style=\{\{fontSize:32\}\} aria-hidden="true"/>\
+              <div style=\{\{fontFamily:"Georgia,serif",fontSize:18,marginTop:10\}\}>Daily limit reached</div>\
+              <div style=\{\{fontSize:12,color:P.t3,marginTop:6\}\}>You used \{usage.daily\}/\{LIMITS.daily\} generations today.</div>\
+            </div>\
+          ) : (\
+            <div style=\{\{display:"grid",gridTemplateColumns:"1fr 1fr",gap:24\}\}>\
+              <div style=\{s.card\}>\
+                <div style=\{\{fontSize:10,color:P.coral,letterSpacing:2,textTransform:"uppercase",marginBottom:20\}\}>Content brief</div>\
+                <Field label="Hook" value=\{genForm.hook\} onChange=\{uf("hook")\} placeholder="Opening angle or attention-grabbing line"/>\
+                <Field label="Theme 1" value=\{genForm.theme1\} onChange=\{uf("theme1")\} placeholder="Primary theme"/>\
+                <Field label="Theme 2" value=\{genForm.theme2\} onChange=\{uf("theme2")\} placeholder="Secondary theme"/>\
+                <Field label="Extra Theme" value=\{genForm.extra\} onChange=\{uf("extra")\} placeholder="Additional context or angle"/>\
+                <div style=\{\{marginBottom:22\}\}>\
+                  <label style=\{s.label\}>Image or video</label>\
+                  <p style=\{\{fontSize:12,color:P.t3,margin:"0 0 10px",lineHeight:1.7\}\}>\
+                    Do you want to upload an image or Video?<br/>\
+                    Leave blank to grab from database.\
+                  </p>\
+                  <div\
+                    onDragOver=\{e=>\{e.preventDefault();setDragging(true)\}\}\
+                    onDragLeave=\{()=>setDragging(false)\}\
+                    onDrop=\{e=>\{e.preventDefault();setDragging(false);handleFile(e.dataTransfer.files[0])\}\}\
+                    onClick=\{()=>fileRef.current&&fileRef.current.click()\}\
+                    style=\{\{border:`1.5px dashed $\{dragging?P.coral:P.border\}`,borderRadius:10,padding:"20px 16px",textAlign:"center",cursor:"pointer",background:dragging?`$\{P.coral\}12`:P.bg3,transition:"all .2s"\}\}>\
+                    \{genForm.fileName ? (\
+                      <div>\
+                        <i className="ti ti-check" style=\{\{fontSize:20,color:P.coral\}\} aria-hidden="true"/>\
+                        <div style=\{\{fontSize:12,color:P.t2,marginTop:4\}\}>\{genForm.fileName\}</div>\
+                        <span onClick=\{e=>\{e.stopPropagation();setGenForm(f=>(\{...f,file:null,fileName:""\}))\}\} style=\{\{fontSize:10,color:P.t3,cursor:"pointer",display:"block",marginTop:4\}\}>Remove</span>\
+                      </div>\
+                    ) : (\
+                      <div>\
+                        <i className="ti ti-upload" style=\{\{fontSize:22,color:P.t3\}\} aria-hidden="true"/>\
+                        <div style=\{\{fontSize:12,color:P.t2,marginTop:6\}\}>Click to choose a file or drag here</div>\
+                        <div style=\{\{fontSize:10,color:P.t3,marginTop:4\}\}>Size limit: 10 MB</div>\
+                      </div>\
+                    )\}\
+                  </div>\
+                  <input ref=\{fileRef\} type="file" accept="image/*,video/*" style=\{\{display:"none"\}\} onChange=\{e=>handleFile(e.target.files[0])\}/>\
+                </div>\
+                <button onClick=\{generate\} disabled=\{loading\} style=\{\{...s.btn,width:"100%",padding:"12px 20px",fontSize:14,opacity:loading?.7:1\}\}>\
+                  \{loading?"Sending to n8n...":"Generate Content"\}\
+                </button>\
+                <div style=\{\{display:"flex",justifyContent:"space-between",fontSize:10,color:P.t3,marginTop:10\}\}>\
+                  <span>Daily: \{usage.daily\}/\{LIMITS.daily\}</span>\
+                  <span>Monthly: \{usage.monthly\}/\{LIMITS.monthly\}</span>\
+                </div>\
+              </div>\
+              <div style=\{s.card\}>\
+                <div style=\{\{fontSize:10,color:P.coral,letterSpacing:2,textTransform:"uppercase",marginBottom:20\}\}>Generated content</div>\
+                \{result ? (\
+                  <div>\
+                    <textarea value=\{edited\} onChange=\{e=>setEdited(e.target.value)\} rows=\{14\} style=\{\{...s.input,resize:"vertical",lineHeight:1.75,minHeight:240\}\}/>\
+                    <div style=\{\{display:"flex",gap:10,marginTop:12\}\}>\
+                      <button onClick=\{approve\} style=\{s.btn\}>Approve & save</button>\
+                      <button onClick=\{()=>\{setResult(null);setEdited("")\}\} style=\{s.ghost\}>Discard</button>\
+                      <button onClick=\{()=>\{navigator.clipboard.writeText(edited);toast("Copied")\}\} style=\{s.ghost\}>Copy</button>\
+                    </div>\
+                  </div>\
+                ) : (\
+                  <div style=\{\{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:280,color:P.t3,fontSize:13,textAlign:"center",gap:10\}\}>\
+                    \{loading\
+                      ? <><i className="ti ti-loader-2" style=\{\{fontSize:28,color:P.coral\}\} aria-hidden="true"/><span>Sending to n8n...</span></>\
+                      : <><i className="ti ti-writing" style=\{\{fontSize:28,color:P.border\}\} aria-hidden="true"/><span>Fill in the brief and click Generate</span></>\}\
+                  </div>\
+                )\}\
+              </div>\
+            </div>\
+          )\}\
+        </div>\
+      );\
+    \}\
+\
+    // \uc0\u9472 \u9472  REPURPOSE \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \
+    function Repurpose(\{ library, toast \}) \{\
+      const [sel, setSel] = useState(null);\
+      const [fmt, setFmt] = useState("");\
+      const [loading, setLoading] = useState(false);\
+      const [result, setResult] = useState(null);\
+      const [edited, setEdited] = useState("");\
+      const fmts = ["Instagram Post","Carousel","LinkedIn Post","Newsletter","Email","Story Sequence","Reel Script","Portuguese Version","English Version"];\
+      const go = async()=>\{\
+        if (!sel||!fmt) return toast("Select content and format","err");\
+        setLoading(true);\
+        try \{\
+          const data = await callWebhook(WH.repurpose,\{action:"repurpose",original_content:sel.content,target_format:fmt\});\
+          const text = data.content||data.text||`[n8n demo]\\n\\nRepurposed as: $\{fmt\}\\n\\n$\{sel.content\}`;\
+          setResult(text); setEdited(text); toast(`Repurposed as $\{fmt\}`);\
+        \} catch \{\
+          const fb=`[n8n not reachable]\\n\\nRepurposed as: $\{fmt\}\\n\\n$\{sel.content\}`;\
+          setResult(fb); setEdited(fb); toast("n8n not reachable \'97 showing demo","err");\
+        \}\
+        setLoading(false);\
+      \};\
+      if (!library.length) return (\
+        <div><h1 style=\{s.pageTitle\}>Repurpose</h1><p style=\{s.pageSub\}>Transform existing content into new formats</p>\
+        <div style=\{\{...s.card,textAlign:"center",color:P.t3,padding:60\}\}>No content in library yet. Generate some first.</div></div>\
+      );\
+      return (\
+        <div>\
+          <h1 style=\{s.pageTitle\}>Repurpose</h1>\
+          <p style=\{s.pageSub\}>Transform existing content into new formats</p>\
+          <div style=\{\{display:"grid",gridTemplateColumns:"1fr 1fr",gap:24\}\}>\
+            <div style=\{s.card\}>\
+              <div style=\{\{fontSize:10,color:P.coral,letterSpacing:2,textTransform:"uppercase",marginBottom:14\}\}>Select content</div>\
+              <div style=\{\{maxHeight:260,overflowY:"auto",marginBottom:18\}\}>\
+                \{library.map(item=>(\
+                  <div key=\{item.id\} onClick=\{()=>setSel(item)\}\
+                    style=\{\{padding:"10px 12px",marginBottom:6,borderRadius:8,cursor:"pointer",\
+                      border:`1px solid $\{sel&&sel.id===item.id?P.coral:P.border\}`,\
+                      background:sel&&sel.id===item.id?`$\{P.coral\}18`:P.bg3,fontSize:12,color:P.t1\}\}>\
+                    <div style=\{\{marginBottom:3\}\}>\{(item.content||"").substring(0,90)\}...</div>\
+                    <div style=\{\{fontSize:10,color:P.t3\}\}>\{item.date\}</div>\
+                  </div>\
+                ))\}\
+              </div>\
+              <label style=\{s.label\}>Target format</label>\
+              <select value=\{fmt\} onChange=\{e=>setFmt(e.target.value)\} style=\{\{...s.input,marginBottom:16\}\}>\
+                <option value="">Choose format...</option>\
+                \{fmts.map(f=><option key=\{f\}>\{f\}</option>)\}\
+              </select>\
+              <button onClick=\{go\} disabled=\{loading\} style=\{\{...s.btn,width:"100%"\}\}>\{loading?"Repurposing...":"Repurpose"\}</button>\
+            </div>\
+            <div style=\{s.card\}>\
+              <div style=\{\{fontSize:10,color:P.coral,letterSpacing:2,textTransform:"uppercase",marginBottom:14\}\}>Result</div>\
+              \{result ? (\
+                <div>\
+                  <textarea value=\{edited\} onChange=\{e=>setEdited(e.target.value)\} rows=\{13\} style=\{\{...s.input,resize:"vertical",lineHeight:1.75\}\}/>\
+                  <div style=\{\{display:"flex",gap:10,marginTop:12\}\}>\
+                    <button onClick=\{()=>\{navigator.clipboard.writeText(edited);toast("Copied")\}\} style=\{s.btn\}>Copy</button>\
+                    <button onClick=\{()=>\{setResult(null);setEdited("")\}\} style=\{s.ghost\}>Clear</button>\
+                  </div>\
+                </div>\
+              ) : (\
+                <div style=\{\{display:"flex",alignItems:"center",justifyContent:"center",height:240,color:P.t3,fontSize:13\}\}>\
+                  Select content and format, then repurpose\
+                </div>\
+              )\}\
+            </div>\
+          </div>\
+        </div>\
+      );\
+    \}\
+\
+    // \uc0\u9472 \u9472  LIBRARY \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \
+    function Library(\{ library, setLibrary, toast \}) \{\
+      const [search, setSearch] = useState("");\
+      const [filter, setFilter] = useState("all");\
+      const items = library.filter(i=>\{\
+        const ms=(i.content||"").toLowerCase().includes(search.toLowerCase());\
+        const mf=filter==="all"||(filter==="posted"&&i.posted)||(filter==="draft"&&!i.posted);\
+        return ms&&mf;\
+      \});\
+      return (\
+        <div>\
+          <div style=\{\{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:28\}\}>\
+            <div><h1 style=\{s.pageTitle\}>Library</h1><p style=\{s.pageSub\}>All your approved content</p></div>\
+            <div style=\{\{display:"flex",gap:10,alignItems:"center"\}\}>\
+              <input value=\{search\} onChange=\{e=>setSearch(e.target.value)\} placeholder="Search..." style=\{\{...s.input,width:170\}\}/>\
+              \{["all","draft","posted"].map(f=>(\
+                <button key=\{f\} onClick=\{()=>setFilter(f)\} style=\{\{...s.ghost,borderColor:filter===f?P.coral:P.border,color:filter===f?P.coral:P.t2,textTransform:"capitalize",fontSize:11\}\}>\{f\}</button>\
+              ))\}\
+            </div>\
+          </div>\
+          \{items.length===0 ? (\
+            <div style=\{\{...s.card,textAlign:"center",color:P.t3,padding:60\}\}>\{library.length===0?"No content yet. Generate some first.":"No results found."\}</div>\
+          ) : (\
+            <div style=\{\{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14\}\}>\
+              \{items.map(i=>(\
+                <div key=\{i.id\} style=\{\{...s.card,position:"relative"\}\}>\
+                  \{i.posted&&<span style=\{\{position:"absolute",top:12,right:12,fontSize:9,color:P.cyan,border:`1px solid $\{P.cyan\}`,borderRadius:10,padding:"2px 7px",letterSpacing:1\}\}>POSTED</span>\}\
+                  <div style=\{\{fontSize:12,color:P.t1,lineHeight:1.75,marginBottom:10,maxHeight:90,overflow:"hidden"\}\}>\{i.content\}</div>\
+                  <div style=\{\{fontSize:10,color:P.t3,marginBottom:12\}\}>\{i.date\}\{i.file&&` \'b7 $\{i.file\}`\}</div>\
+                  <div style=\{\{display:"flex",gap:8,flexWrap:"wrap"\}\}>\
+                    <button onClick=\{()=>\{navigator.clipboard.writeText(i.content);toast("Copied")\}\} style=\{\{...s.ghost,fontSize:11\}\}>Copy</button>\
+                    <button onClick=\{()=>setLibrary(l=>l.map(x=>x.id===i.id?\{...x,posted:!x.posted\}:x))\}\
+                      style=\{\{...s.ghost,fontSize:11,borderColor:i.posted?P.t3:P.cyan,color:i.posted?P.t3:P.cyan\}\}>\
+                      \{i.posted?"Unpost":"Mark posted"\}\
+                    </button>\
+                    <button onClick=\{()=>\{setLibrary(l=>l.filter(x=>x.id!==i.id));toast("Deleted")\}\} style=\{\{...s.ghost,fontSize:11\}\}>Delete</button>\
+                  </div>\
+                </div>\
+              ))\}\
+            </div>\
+          )\}\
+        </div>\
+      );\
+    \}\
+\
+    // \uc0\u9472 \u9472  SETTINGS \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \
+    function Settings(\{ usage, toast \}) \{\
+      const [notif, setNotif] = useState(\{enabled:false,freq:"daily",time:"09:00"\});\
+      const reqNotif = ()=>\{\
+        if ("Notification" in window) Notification.requestPermission().then(p=>\{ if(p==="granted")\{setNotif(n=>(\{...n,enabled:true\}));toast("Notifications enabled");\} \});\
+      \};\
+      return (\
+        <div>\
+          <h1 style=\{s.pageTitle\}>Settings</h1>\
+          <p style=\{s.pageSub\}>Notifications, limits, and webhook configuration</p>\
+          <div style=\{\{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20\}\}>\
+            <div style=\{s.card\}>\
+              <div style=\{\{fontSize:10,color:P.coral,letterSpacing:2,textTransform:"uppercase",marginBottom:16\}\}>Notifications</div>\
+              <div style=\{\{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16\}\}>\
+                <span style=\{\{fontSize:13,color:P.t1\}\}>Browser notifications</span>\
+                <button onClick=\{reqNotif\} style=\{\{...s.ghost,borderColor:notif.enabled?P.cyan:P.border,color:notif.enabled?P.cyan:P.t2,fontSize:11\}\}>\{notif.enabled?"Enabled \uc0\u10003 ":"Enable"\}</button>\
+              </div>\
+              <div style=\{\{marginBottom:16\}\}>\
+                <label style=\{s.label\}>Reminder frequency</label>\
+                <select value=\{notif.freq\} onChange=\{e=>setNotif(n=>(\{...n,freq:e.target.value\}))\} style=\{s.input\}>\
+                  <option value="daily">Daily</option><option value="weekly">Weekly</option><option value="custom">Custom</option>\
+                </select>\
+              </div>\
+              <div style=\{\{marginBottom:16\}\}>\
+                <label style=\{s.label\}>Preferred time</label>\
+                <input type="time" value=\{notif.time\} onChange=\{e=>setNotif(n=>(\{...n,time:e.target.value\}))\} style=\{s.input\}/>\
+              </div>\
+              <div style=\{\{borderTop:`1px solid $\{P.border\}`,paddingTop:12\}\}>\
+                \{["Create Content Reminder","Repurpose Content Reminder","Weekly Content Review"].map(t=>(\
+                  <div key=\{t\} style=\{\{fontSize:12,color:P.t2,padding:"6px 0",borderBottom:`1px solid $\{P.border\}`\}\}>\{t\}</div>\
+                ))\}\
+              </div>\
+            </div>\
+            <div style=\{s.card\}>\
+              <div style=\{\{fontSize:10,color:P.coral,letterSpacing:2,textTransform:"uppercase",marginBottom:16\}\}>Generation limits</div>\
+              \{[["Daily usage",usage.daily,LIMITS.daily],["Monthly usage",usage.monthly,LIMITS.monthly]].map(([l,u,m])=>(\
+                <div key=\{l\} style=\{\{marginBottom:20\}\}>\
+                  <div style=\{\{display:"flex",justifyContent:"space-between",fontSize:13,color:P.t1,marginBottom:6\}\}>\
+                    <span>\{l\}</span><span style=\{\{color:u>=m?P.coral:P.t2\}\}>\{u\} / \{m\}</span>\
+                  </div>\
+                  <Bar used=\{u\} max=\{m\} color=\{u>=m?P.coral:P.cyan\}/>\
+                </div>\
+              ))\}\
+              <div style=\{\{marginTop:8,padding:"12px 14px",background:P.bg3,borderRadius:8,fontSize:11,color:P.t3,lineHeight:1.7\}\}>\
+                Limits stored locally in MVP. Full version resets via server on daily/monthly schedule.\
+              </div>\
+            </div>\
+            <div style=\{\{...s.card,gridColumn:"1/-1"\}\}>\
+              <div style=\{\{fontSize:10,color:P.coral,letterSpacing:2,textTransform:"uppercase",marginBottom:16\}\}>Webhook configuration</div>\
+              \{Object.entries(WH).map(([k,url])=>(\
+                <div key=\{k\} style=\{\{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",background:P.bg3,borderRadius:7,marginBottom:8\}\}>\
+                  <span style=\{\{fontSize:10,color:P.coral,letterSpacing:1.5,textTransform:"uppercase",width:90,flexShrink:0\}\}>\{k\}</span>\
+                  <span style=\{\{fontSize:11,color:P.t3,fontFamily:"monospace",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"\}\}>\{url\}</span>\
+                  <button onClick=\{()=>\{navigator.clipboard.writeText(url);toast("Copied");\}\} style=\{\{...s.ghost,fontSize:10,padding:"5px 10px"\}\}>Copy</button>\
+                </div>\
+              ))\}\
+            </div>\
+          </div>\
+        </div>\
+      );\
+    \}\
+\
+    // \uc0\u9472 \u9472  APP SHELL \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \
+    const SEED = [\
+      \{id:1,desc:"5 somatic practices to release anxiety from your body",category:"Education",type:"Carousel",pillar:"Body",source:"Client session",date:"2025-06-01"\},\
+      \{id:2,desc:"What burnout really feels like in the nervous system",category:"Awareness",type:"Reel Script",pillar:"Healing",source:"Personal experience",date:"2025-06-03"\},\
+      \{id:3,desc:"How 10 minutes of embodiment changed my morning",category:"Personal",type:"Instagram Post",pillar:"Transformation",source:"Morning practice",date:"2025-06-04"\},\
+    ];\
+\
+    const NAV = [\
+      \{id:"dashboard",label:"Dashboard",icon:"ti-layout-dashboard"\},\
+      \{id:"brand",label:"Brand Setup",icon:"ti-sparkles"\},\
+      \{id:"ideas",label:"Ideas",icon:"ti-bulb"\},\
+      \{id:"generate",label:"Generate",icon:"ti-wand"\},\
+      \{id:"repurpose",label:"Repurpose",icon:"ti-rotate"\},\
+      \{id:"library",label:"Library",icon:"ti-books"\},\
+      \{id:"settings",label:"Settings",icon:"ti-settings"\},\
+    ];\
+\
+    function App() \{\
+      const [page, setPage] = useState("dashboard");\
+      const [brand, setBrand] = useState(\{\});\
+      const [ideas, setIdeas] = useState(SEED);\
+      const [library, setLibrary] = useState([]);\
+      const [genForm, setGenForm] = useState(\{hook:"",theme1:"",theme2:"",extra:"",file:null,fileName:""\});\
+      const [usage, setUsage] = useState(\{daily:2,monthly:7\});\
+      const [toastState, setToastState] = useState(null);\
+\
+      const showToast = (msg,type)=>\{ setToastState(\{msg,err:type==="err"\}); setTimeout(()=>setToastState(null),3200); \};\
+      const sp = \{ toast:showToast \};\
+\
+      return (\
+        <div style=\{\{display:"flex",minHeight:"100vh",background:P.bg0,color:P.t1,fontFamily:"system-ui,'Helvetica Neue',sans-serif",fontSize:14\}\}>\
+          <aside style=\{\{width:210,background:P.bg1,borderRight:`1px solid $\{P.border\}`,display:"flex",flexDirection:"column",flexShrink:0\}\}>\
+            <div style=\{\{padding:"22px 20px 18px",borderBottom:`1px solid $\{P.border\}`\}\}>\
+              <div style=\{\{fontSize:9,color:P.coral,letterSpacing:3,textTransform:"uppercase",marginBottom:4\}\}>Content In Flow</div>\
+              <div style=\{\{fontSize:17,fontWeight:300,color:P.t1,fontFamily:"Georgia,serif",letterSpacing:.5\}\}>\uc0\u10022  Studio</div>\
+            </div>\
+            <nav style=\{\{flex:1,padding:"14px 10px"\}\}>\
+              \{NAV.map(n=>(\
+                <button key=\{n.id\} onClick=\{()=>setPage(n.id)\}\
+                  style=\{\{display:"flex",alignItems:"center",gap:9,width:"100%",padding:"9px 12px",marginBottom:3,\
+                    background:page===n.id?P.bg3:"transparent",\
+                    border:page===n.id?`1px solid $\{P.border\}`:"1px solid transparent",\
+                    borderRadius:8,color:page===n.id?P.coral:P.t2,cursor:"pointer",textAlign:"left",fontSize:13\}\}>\
+                  <i className=\{`ti $\{n.icon\}`\} style=\{\{fontSize:16,flexShrink:0\}\} aria-hidden="true"/>\
+                  \{n.label\}\
+                </button>\
+              ))\}\
+            </nav>\
+            <div style=\{\{padding:"12px 16px",borderTop:`1px solid $\{P.border\}`\}\}>\
+              <div style=\{\{display:"flex",justifyContent:"space-between",fontSize:10,color:P.t3,marginBottom:4\}\}>\
+                <span>Daily</span><span>\{usage.daily\}/\{LIMITS.daily\}</span>\
+              </div>\
+              <Bar used=\{usage.daily\} max=\{LIMITS.daily\}/>\
+            </div>\
+          </aside>\
+          <main style=\{\{flex:1,overflowY:"auto",padding:36,minWidth:0\}\}>\
+            \{page==="dashboard" && <Dashboard ideas=\{ideas\} library=\{library\} usage=\{usage\} go=\{setPage\}/>\}\
+            \{page==="brand"     && <BrandSetup brand=\{brand\} setBrand=\{setBrand\} \{...sp\}/>\}\
+            \{page==="ideas"     && <Ideas ideas=\{ideas\} setIdeas=\{setIdeas\} go=\{setPage\} setGenForm=\{setGenForm\} \{...sp\}/>\}\
+            \{page==="generate"  && <Generate genForm=\{genForm\} setGenForm=\{setGenForm\} usage=\{usage\} setUsage=\{setUsage\} library=\{library\} setLibrary=\{setLibrary\} \{...sp\}/>\}\
+            \{page==="repurpose" && <Repurpose library=\{library\} \{...sp\}/>\}\
+            \{page==="library"   && <Library library=\{library\} setLibrary=\{setLibrary\} \{...sp\}/>\}\
+            \{page==="settings"  && <Settings usage=\{usage\} \{...sp\}/>\}\
+          </main>\
+          <Toast t=\{toastState\}/>\
+        </div>\
+      );\
+    \}\
+\
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);\
+  </script>\
+</body>\
+</html>}
